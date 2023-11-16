@@ -1,4 +1,4 @@
-from aiogram import types, F
+from aiogram import types, F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
@@ -23,48 +23,57 @@ class ClientState(StatesGroup):
 
 bot = Bot(token=config.bot_token.get_secret_value(), parse_mode=ParseMode.HTML)
 storage = MemoryStorage()
+rt = Router()
 dp = Dispatcher(storage=storage)
+dp.include_router(rt)
 
 
-kb = [
-    [
-        KeyboardButton(text='Играть'),
-        KeyboardButton(text='Помощь')
-    ],
-]
-keyboard1 = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
+@rt.message(Command("start"))
+async def start_handler(message: Message):
+    kb = [
+        [
+            KeyboardButton(text='Играть'),
+            KeyboardButton(text='Помощь')
+        ],
+    ]
+    keyboard1 = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 
-
-@dp.message(Command("start"))
-async def start_handler(message: Message, state: FSMContext):
     await message.answer(GREETINGS, reply_markup=keyboard1)
-    await state.set_state(ClientState.BEGIN_BOT)
 
 
-@dp.message(Command("Играть"))
-async def start_game(msg: Message, state: FSMContext):
-    number = get_digit()
-    await msg.answer(f'------Компьютер загадал число - {number}', reply_markup=keyboard1)
-
-
-@dp.message()
-async def number_selection(msg: types.Message):
-    cow = 0
-    bull = 0
-    cur_num = msg.text
-    print(cur_num)
-    # for i in F.text.lower():
-    #     if i in number and F.text.lower().index(i) == number.index(i):
-    #         bull += 1
-    #     elif i in number:
-    #         cow += 1
-    print(f'')
-    await msg.answer(f'> быки - {bull}, коровы - {cow}', reply_markup=keyboard1)
-
-
-@dp.message(F.text.lower() == "помощь")
+@rt.message(F.text.lower() == "Помощь")
 async def help_handler(msg: Message):
     await msg.answer(HELP_TEXT)
+
+
+@rt.message(Command("Играть"))
+async def start_game(msg: Message, state: FSMContext):
+    number = get_digit()
+    await msg.answer(f'------Компьютер загадал число - {number}')
+    await state.set_state(ClientState.START_GAME)
+
+
+# @dp.message(state=ClientState.START_GAME)
+# async def start_game(msg: Message, state: FSMContext):
+#     await msg.answer('Введите четырёхзначное число с неповторяющимися цифрами')
+#     await state.set_state(ClientState.IN_THE_GAME)
+
+
+# @dp.message()
+# async def number_selection(msg: types.Message):
+#     cow = 0
+#     bull = 0
+#     cur_num = msg.text
+#     print(cur_num)
+#     # for i in F.text.lower():
+#     #     if i in number and F.text.lower().index(i) == number.index(i):
+#     #         bull += 1
+#     #     elif i in number:
+#     #         cow += 1
+#     print(f'')
+#     await msg.answer(f'> быки - {bull}, коровы - {cow}', reply_markup=keyboard1)
+
+
 
 
 async def main():
