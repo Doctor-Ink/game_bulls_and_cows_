@@ -27,3 +27,4 @@ def cow_bull(attempt, number):
         elif i in number:
             cow += 1
     print(f'> быки - {bull}, коровы - {cow}')
+

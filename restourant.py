@@ -1,7 +1,8 @@
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.storage.memory import MemoryStorage
-
+import asyncio
+from aiogram.filters import Command
 from config_reader import config
 from aiogram import Bot, Dispatcher, types, Router, F
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
@@ -27,84 +28,95 @@ dp = Dispatcher(storage=storage)
 dp.include_router(rt)
 
 
-@rt.message(F.text.lower() == 'Go')
+@rt.message(Command('Go'))
 async def start_proccess(message: types.Message, state: FSMContext) -> None:
     msg = '''Привет! 👋🤖 Я бот доставки еды! В каком ты городе?'''
 
-    msk_btn = KeyboardButton('Москва')
-    spb_btn = KeyboardButton('СПБ')
-    voronezh_btn = KeyboardButton('Воронеж')
-    lipetsk_btn = KeyboardButton('Липецк')
+    kb = [
+        [
+            KeyboardButton(text='Москва'),
+            KeyboardButton(text='СПБ')
+        ],
+        [
+            KeyboardButton(text='Воронеж'),
+            KeyboardButton(text='Липецк')
+        ],
+    ]
+    keyboard = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 
-    markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(msk_btn, spb_btn)
-    markup.row(voronezh_btn, lipetsk_btn)
-
-    await message.answer(msg, reply_markup=markup)
+    await message.answer(msg, reply_markup=keyboard)
     await state.set_state(ClientState.START_ORDER)
 
 
-@rt.message(state=ClientState.START_ORDER)
+@rt.message(ClientState.START_ORDER)
 async def choose_restoraunts_process(message: types.Message, state: FSMContext):
     user_msg = message.text
     await state.update_data(CITY=user_msg)
 
-    dragon_rest_btn = KeyboardButton('Китайский дракон')
-    pylounge_rest_btn = KeyboardButton('PyLounge')
+    kb = [
+        [
+            KeyboardButton(text='Китайский дракон'),
+            KeyboardButton(text='PyLounge')
+        ],
+    ]
+    keyboard = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 
-    markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(dragon_rest_btn, pylounge_rest_btn)
-
-    await message.answer('Выберите заведение', reply_markup=markup)
+    await message.answer('Выберите заведение', reply_markup=keyboard)
     await state.set_state(ClientState.CITY_SELECTED)
 
 
-@rt.message(state=ClientState.CITY_SELECTED)
+@rt.message(ClientState.CITY_SELECTED)
 async def dish_process(message: types.Message, state: FSMContext):
     user_msg = message.text
     await state.update_data(RESTAURANT=user_msg)
 
-    soup_menu_btn = KeyboardButton('Суп')
-    nosoup_menu_btn = KeyboardButton('Не суп')
+    kb = [
+        [
+            KeyboardButton(text='Суп'),
+            KeyboardButton(text='Не суп')
+        ],
+    ]
+    keyboard = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 
-    markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(soup_menu_btn, nosoup_menu_btn)
-
-    await message.answer('Выберите блюдо', reply_markup=markup)
+    await message.answer('Выберите блюдо', reply_markup=keyboard)
     await state.set_state(ClientState.RESTAURANT_SELECTED)
 
 
-@rt.message(state=ClientState.RESTAURANT_SELECTED)
+@rt.message(ClientState.RESTAURANT_SELECTED)
 async def drink_process(message: types.Message, state: FSMContext):
     user_msg = message.text
     await state.update_data(DISH=user_msg)
 
-    cola_menu_btn = KeyboardButton('Кола')
-    more_cool_cola_menu_btn = KeyboardButton('Тоже кола но РУССКАЯ!')
+    kb = [
+        [
+            KeyboardButton(text='Кола'),
+            KeyboardButton(text='Тоже кола но РУССКАЯ!')
+        ],
+    ]
+    keyboard = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 
-    markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(cola_menu_btn, more_cool_cola_menu_btn)
-
-    await message.answer('Выберите напиток', reply_markup=markup)
+    await message.answer('Выберите напиток', reply_markup=keyboard)
     await state.set_state(ClientState.DISH_SELECTED)
 
 
-@rt.message(state=ClientState.DISH_SELECTED)
+@rt.message(ClientState.DISH_SELECTED)
 async def order_process(message: types.Message, state: FSMContext):
     user_msg = message.text
     await state.update_data(DRINK=user_msg)
 
-    proccess_btn = KeyboardButton('Оформить заказ')
-    cancel_btn = KeyboardButton('Отмена')
+    kb = [
+        [
+            KeyboardButton(text='Оформить заказ'),
+            KeyboardButton(text='Отмена')
+        ],
+    ]
+    keyboard = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 
-    markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(proccess_btn, cancel_btn)
-
-    await message.answer('Мы почти закончили', reply_markup=markup)
+    await message.answer('Мы почти закончили', reply_markup=keyboard)
     await state.set_state(ClientState.DRINK_SELECTED)
 
 
-@rt.message(state=ClientState.DRINK_SELECTED)
+@rt.message(ClientState.DRINK_SELECTED)
 async def finish_process(message: types.Message, state: FSMContext):
     user_msg = message.text
     if user_msg == 'Оформить заказ':
@@ -120,5 +132,10 @@ async def finish_process(message: types.Message, state: FSMContext):
     await state.finish()
 
 
-if __name__ == '__main__':
-    dp.start_polling(dp, skip_updates=True)
+async def main():
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

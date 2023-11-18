@@ -29,7 +29,7 @@ dp.include_router(rt)
 
 
 @rt.message(Command("start"))
-async def start_handler(message: Message):
+async def start_bot(message: Message, state: FSMContext):
     kb = [
         [
             KeyboardButton(text='Играть'),
@@ -37,43 +37,64 @@ async def start_handler(message: Message):
         ],
     ]
     keyboard1 = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
-
     await message.answer(GREETINGS, reply_markup=keyboard1)
+    await state.set_state(ClientState.BEGIN_BOT)
 
 
-@rt.message(F.text.lower() == "Помощь")
+@rt.message(F.text.lower() == "помощь")
 async def help_handler(msg: Message):
     await msg.answer(HELP_TEXT)
 
 
-@rt.message(Command("Играть"))
+@rt.message(F.text.lower() == "играть")
+@rt.message(F.text.lower() == "да")
 async def start_game(msg: Message, state: FSMContext):
     number = get_digit()
-    await msg.answer(f'------Компьютер загадал число - {number}')
+    attempt = 0
+    await state.update_data(NUMBER=number)
+    await state.update_data(ATTEMPT=attempt)
+    await msg.answer(
+        f"------Компьютер загадал число - {len(str(number)) * '*'}",
+        reply_markup=types.ReplyKeyboardRemove())
     await state.set_state(ClientState.START_GAME)
 
 
-# @dp.message(state=ClientState.START_GAME)
-# async def start_game(msg: Message, state: FSMContext):
-#     await msg.answer('Введите четырёхзначное число с неповторяющимися цифрами')
-#     await state.set_state(ClientState.IN_THE_GAME)
+@rt.message(F.text.lower() == "нет")
+async def help_handler(msg: Message):
+    await msg.answer('Пидор ответ!')
 
 
-# @dp.message()
-# async def number_selection(msg: types.Message):
-#     cow = 0
-#     bull = 0
-#     cur_num = msg.text
-#     print(cur_num)
-#     # for i in F.text.lower():
-#     #     if i in number and F.text.lower().index(i) == number.index(i):
-#     #         bull += 1
-#     #     elif i in number:
-#     #         cow += 1
-#     print(f'')
-#     await msg.answer(f'> быки - {bull}, коровы - {cow}', reply_markup=keyboard1)
+@rt.message(ClientState.START_GAME)
+async def reply_builder(message: types.Message, state: FSMContext,):
+    current_digit = await state.get_data()
+    number = current_digit['NUMBER']
+    attempt = current_digit['ATTEMPT']
+    attempt += 1
+    await message.answer("Введите четырёхзначное число с неповторяющимися цифрами - ")
+    if message.text == number:
+        kb = [
+            [
+                KeyboardButton(text='Да'),
+                KeyboardButton(text='Нет')
+            ],
+        ]
+        keyboard = ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 
-
+        await message.answer(f"Вы угадали !!! Количество ходов - {attempt}")
+        await message.answer("Хотите сыграть ещё раз?", reply_markup=keyboard)
+    elif message.text.isdigit() and len(message.text) == 4 and len(message.text) == len(set(message.text)):
+        cow = 0
+        bull = 0
+        await state.update_data(ATTEMPT=attempt)
+        for i in message.text:
+            if i in number and message.text.index(i) == number.index(i):
+                bull += 1
+            elif i in number:
+                cow += 1
+        await message.answer(f'№{attempt} - быки - {bull}, коровы - {cow}')
+    else:
+        await state.update_data(ATTEMPT=attempt)
+        await message.answer("Некорректный ввод")
 
 
 async def main():
