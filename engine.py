@@ -18,13 +18,13 @@ def check_input(num):
         print('Некорректный ввод')
 
 
-def cow_bull(attempt, number):
+def cow_bull(cur_num, res_number):
     cow = 0
     bull = 0
-    for i in attempt:
-        if i in number and attempt.index(i) == number.index(i):
+    for i in cur_num:
+        if i in res_number and cur_num.index(i) == res_number.index(i):
             bull += 1
-        elif i in number:
+        elif i in res_number:
             cow += 1
-    print(f'> быки - {bull}, коровы - {cow}')
+    return bull, cow
 
