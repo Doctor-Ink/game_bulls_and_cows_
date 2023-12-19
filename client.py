@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# версия для игры на компьютере
+
 from engine import check_input, get_digit, cow_bull
 
 print('------Компьютер загадал число')
