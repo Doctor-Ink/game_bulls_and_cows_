@@ -1,5 +1,6 @@
 # game_bulls_and_cows_
 # Игра «Быки и коровы»
+<https://t.me/bulls_and_cows_my_bot>
 # https://goo.gl/Go2mb9
 
 Правила:
