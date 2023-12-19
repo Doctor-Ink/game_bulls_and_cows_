@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-
-
-
 from engine import check_input, get_digit, cow_bull
 
 print('------Компьютер загадал число')
