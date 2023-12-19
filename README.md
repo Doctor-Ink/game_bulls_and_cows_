@@ -19,3 +19,5 @@
 
 Формат ответа компьютера
 > быки - 1, коровы - 1
+
+( addition link  - #  https://www.youtube.com/watch?v=TocK8wuSzE0)
