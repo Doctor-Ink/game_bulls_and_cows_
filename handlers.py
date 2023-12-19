@@ -10,6 +10,7 @@ from engine import get_digit, cow_bull
 from config_reader import config
 import asyncio
 import logging
+import schedule
 
 
 bot = Bot(token=config.bot_token.get_secret_value(), parse_mode=ParseMode.HTML)
