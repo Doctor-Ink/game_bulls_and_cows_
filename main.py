@@ -11,7 +11,6 @@ from config_reader import config
 import asyncio
 import logging
 
-
 bot = Bot(token=config.bot_token.get_secret_value(), parse_mode=ParseMode.HTML)
 storage = MemoryStorage()
 rt = Router()
