@@ -3,8 +3,5 @@
 /env
 .env
 admin.py
-middlewares.py
-restourant.py
-utils.py
 app.py
 

@@ -1,9 +1,11 @@
+# python 3.12
 from aiogram import types, F, Router, Bot, Dispatcher
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from aiogram.filters import Command
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.client.default import DefaultBotProperties
 from kb import keyboard_start, keyboard_y_n
 from text import GREETINGS, HELP_TEXT
 from engine import get_digit, cow_bull
@@ -11,7 +13,7 @@ from config_reader import config
 import asyncio
 import logging
 
-bot = Bot(token=config.bot_token.get_secret_value(), parse_mode=ParseMode.HTML)
+bot = Bot(token=config.bot_token.get_secret_value(), default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 storage = MemoryStorage()
 rt = Router()
 dp = Dispatcher(storage=storage)
