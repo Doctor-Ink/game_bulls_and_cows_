@@ -21,7 +21,6 @@ dp.include_router(rt)
 
 
 @rt.message(Command("start"))
-@rt.message(F.text.lower() == "нет")
 async def start_bot(message: Message):
     await message.answer(GREETINGS, reply_markup=keyboard_start)
 
@@ -36,30 +35,46 @@ async def start_game(msg: Message, state: FSMContext):
     await state.update_data(NUMBER=get_digit())
     await state.update_data(ATTEMPT=0)
     await msg.answer(
-        f"------Компьютер загадал число - **** ",
-        reply_markup=types.ReplyKeyboardRemove())
+        f"------ Компьютер загадал четырёхзначное число!",
+        reply_markup=types.ReplyKeyboardRemove()
+    )
+    await msg.answer("Введите ваше предположение (4 разные цифры):")
 
 
 @rt.message(F.text.lower() == "нет")
-async def help_handler(msg: Message):
+async def no_handler(msg: Message):
     await msg.answer('Удачи...')
 
 
 @rt.message()
 async def reply_builder(message: types.Message, state: FSMContext,):
+    # Получаем данные состояния
     current_digits = await state.get_data()
+
+    # Проверяем, начата ли игра
+    if not current_digits or 'NUMBER' not in current_digits:
+        await message.answer("Сначала начните игру командой 'Играть'")
+        return
+
     number = current_digits['NUMBER']
     attempt = current_digits['ATTEMPT']
-    await state.update_data(ATTEMPT=attempt + 1)
-    await message.answer("Введите четырёхзначное число с неповторяющимися цифрами - ")
+
+
     if message.text == number:
-        await message.reply(f"Вы угадали !!! Количество ходов - {attempt}")
+        await message.reply(f"🎉 Вы угадали! Количество ходов - {attempt + 1}")
         await message.answer("Хотите сыграть ещё раз?", reply_markup=keyboard_y_n)
-    elif message.text.isdigit() and len(message.text) == 4 and len(message.text) == len(set(message.text)):
+        await state.clear()  # Очищаем состояние после игры
+    elif (message.text.isdigit() and len(message.text) == 4 and len(set(message.text)) == 4):
+        # Увеличиваем счётчик попыток ТОЛЬКО при корректном вводе
+        await state.update_data(ATTEMPT=attempt + 1)
         bull, cow = cow_bull(cur_num=message.text, res_number=number)
         await message.answer(f'№{attempt + 1} - быки - {bull}, коровы - {cow}')
     else:
-        await message.answer("Некорректный ввод")
+        await message.answer(
+            "❌ Некорректный ввод!\n"
+            "Введите четырёхзначное число с 4 разными цифрами\n"
+            "Например: 1234"
+        )
 
 
 async def main():
@@ -68,7 +83,7 @@ async def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     asyncio.run(main())
 
 
