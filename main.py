@@ -1,27 +1,55 @@
 # python 3.12
-from aiogram import types, F, Router, Bot, Dispatcher
-from aiogram.fsm.context import FSMContext
+import asyncio
+import logging
+import os
+from aiogram import Bot, Dispatcher, Router, F, types
+from aiogram.client.default import DefaultBotProperties
 from aiogram.types import Message
 from aiogram.filters import Command
-from aiogram.enums.parse_mode import ParseMode
+from aiogram.enums import ParseMode
+from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.client.default import DefaultBotProperties
 from kb import keyboard_start, keyboard_y_n
 from text import GREETINGS, HELP_TEXT
 from engine import get_digit, cow_bull
 from config_reader import config
-import asyncio
-import logging
+from log import log_user_info, logger
 
-bot = Bot(token=config.bot_token.get_secret_value(), default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+try:
+    ############## SERVER #########################
+    # Для веб сервера забираем переменную ТОКЕН
+    TOKEN = os.environ['TG_TOKEN_BULL']
+    ############## SERVER #########################
+
+    ################ WEBHOOK #########################
+    # Webserver settings
+    # bind localhost only to prevent any external access
+    WEB_SERVER_HOST = '::'
+    # Port for incoming request from reverse proxy. Should be any available port
+    WEB_SERVER_PORT = 8301
+
+    # Path to webhook route, on which Telegram will send requests
+    WEBHOOK_PATH = '/bot/'
+    # Base URL for webhook will be used to generate webhook URL for Telegram,
+    # in this example it is used public DNS with HTTPS support
+    BASE_WEBHOOK_URL = 'https://doctorink.alwaysdata.net/bullsandcows/'
+    ################ WEBHOOK #########################
+    # SERVER
+    bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+except:
+    # Локальная версия
+    bot = Bot(token=config.bot_token.get_secret_value(), default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+
+
 storage = MemoryStorage()
-rt = Router()
 dp = Dispatcher(storage=storage)
+rt = Router()
 dp.include_router(rt)
 
 
 @rt.message(Command("start"))
 async def start_bot(message: Message):
+    log_user_info(message, "START")
     await message.answer(GREETINGS, reply_markup=keyboard_start)
 
 
@@ -32,6 +60,7 @@ async def help_handler(msg: Message):
 
 @rt.message(F.text.lower().in_({'играть', 'да'}))
 async def start_game(msg: Message, state: FSMContext):
+    log_user_info(msg, "GAME_START")
     await state.update_data(NUMBER=get_digit())
     await state.update_data(ATTEMPT=0)
     await msg.answer(
@@ -59,17 +88,29 @@ async def reply_builder(message: types.Message, state: FSMContext,):
     number = current_digits['NUMBER']
     attempt = current_digits['ATTEMPT']
 
+    # ==========  ПРОВЕРКА НА None ==========
+    if message.text is None:
+        await message.answer("Пожалуйста, отправьте число текстом (не фото и не стикер)")
+        return
 
     if message.text == number:
+        # Логируем победу
+        log_user_info(message, "WIN", f"Попыток: {attempt + 1}")
         await message.reply(f"🎉 Вы угадали! Количество ходов - {attempt + 1}")
         await message.answer("Хотите сыграть ещё раз?", reply_markup=keyboard_y_n)
         await state.clear()  # Очищаем состояние после игры
-    elif (message.text.isdigit() and len(message.text) == 4 and len(set(message.text)) == 4):
+    elif message.text.isdigit() and len(message.text) == len(set(message.text)) == 4:
         # Увеличиваем счётчик попыток ТОЛЬКО при корректном вводе
         await state.update_data(ATTEMPT=attempt + 1)
         bull, cow = cow_bull(cur_num=message.text, res_number=number)
+        # Логируем ход
+        logger.info(
+            f"Пользователь {message.from_user.id}: ход {attempt + 1} = {message.text} (быки:{bull} коровы:{cow})"
+        )
         await message.answer(f'№{attempt + 1} - быки - {bull}, коровы - {cow}')
     else:
+        # Логируем некорректный ввод
+        logger.warning(f"Некорректный ввод от {message.from_user.id}: '{message.text}'")
         await message.answer(
             "❌ Некорректный ввод!\n"
             "Введите четырёхзначное число с 4 разными цифрами\n"
