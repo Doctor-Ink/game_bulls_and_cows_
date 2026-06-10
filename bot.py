@@ -12,7 +12,6 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from kb import keyboard_start, keyboard_y_n
 from text import GREETINGS, HELP_TEXT
 from engine import get_digit, cow_bull
-from config_reader import config
 from log import log_user_info, logger
 
 try:
@@ -37,6 +36,7 @@ try:
     # SERVER
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 except:
+    from config_reader import config
     # Локальная версия
     bot = Bot(token=config.bot_token.get_secret_value(), default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 

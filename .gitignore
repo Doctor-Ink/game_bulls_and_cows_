@@ -1,6 +1,7 @@
 /__pycache__
 /.idea
 /env
+/logs
 .env
 admin.py
 app.py
